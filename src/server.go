@@ -9,10 +9,10 @@ import (
 )
 
 type Server struct {
-	Prices CoinPrices
+	Prices *CoinPrices
 }
 
-func NewServer(prices CoinPrices) *Server {
+func NewServer(prices *CoinPrices) *Server {
 	return &Server{Prices: prices}
 }
 

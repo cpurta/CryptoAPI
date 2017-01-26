@@ -55,14 +55,16 @@ func (cp CoinPrices) MonitorPrices(server *Server) {
 		}
 
 		cp = updated
-		sort.Sort(cp)
+		sort.Sort(sort.Reverse(cp))
+
+		server.Prices = &cp
 	}
 }
 
 func main() {
 	coinPrices := make(CoinPrices, 0)
 
-	server := NewServer(coinPrices)
+	server := NewServer(&coinPrices)
 
 	go coinPrices.MonitorPrices(server)
 
