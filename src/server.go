@@ -1,23 +1,25 @@
 package main
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 )
 
 type Server struct {
-	CoinMap *CoinPriceMap
+	Prices CoinPrices
 }
 
-func NewServer(coinMap *CoinPriceMap) *Server {
-	return &Server{CoinMap: coinMap}
+func NewServer(prices CoinPrices) *Server {
+	return &Server{Prices: prices}
 }
 
 func (server *Server) Start() {
 	http.HandleFunc("/api/all", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			response, err := server.CoinMap.Marshal()
+			response, err := json.Marshal(server.Prices)
 			if err != nil {
 				log.Println("Error marshalling coin map for API response:", err.Error())
 				return
@@ -44,5 +46,8 @@ func (server *Server) Start() {
 		w.Write([]byte(`{"error":false,"message":"Succesfully registered device"}`))
 	})
 
-	log.Fatalln(http.ListenAndServeTLS(":443", ".cert", "public.key", nil))
+	certFile := os.Getenv("CRYPTO_API_CERT_FILE")
+	privateKey := os.Getenv("CRYPTO_API_PRIVATE_FILE")
+
+	log.Fatalln(http.ListenAndServeTLS(":443", certFile, privateKey, nil))
 }

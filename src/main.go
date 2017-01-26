@@ -5,27 +5,19 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"sync"
+	"sort"
 	"time"
 )
 
 type CoinPriceMap struct {
-	PriceMap    map[string]CoinInfo
-	Mutex       *sync.Mutex
+	PriceMap    map[string]*CoinInfo
 	LastUpdated time.Time
 }
 
-func NewCoinPriceMap() *CoinPriceMap {
-	return &CoinPriceMap{PriceMap: make(map[string]CoinInfo), Mutex: &sync.Mutex{}, LastUpdated: time.Now()}
-}
-
-func (cm *CoinPriceMap) Marshal() ([]byte, error) {
-	return json.Marshal(cm.PriceMap)
-}
-
-func (cm *CoinPriceMap) MonitorPrices(server *Server) {
+func (cp CoinPrices) MonitorPrices(server *Server) {
 	ticker := time.NewTicker(time.Minute * 1)
 
+	cm := &CoinPriceMap{PriceMap: make(map[string]*CoinInfo), LastUpdated: time.Now()}
 	for range ticker.C {
 		start := time.Now()
 		log.Println("Pulling crytpocurrency prices...")
@@ -47,25 +39,32 @@ func (cm *CoinPriceMap) MonitorPrices(server *Server) {
 			return
 		}
 
-		cm.Mutex.Lock()
 		err = json.Unmarshal(body, &cm.PriceMap)
 		if err != nil {
 			log.Println("Error unmarshalling response body into pricing map:", err.Error())
+			continue
 		} else {
 			cm.LastUpdated = time.Now()
 		}
-		cm.Mutex.Unlock()
 
 		log.Printf("Finished pulling all cryptocurrency prices in %.3f", time.Since(start).Seconds())
+
+		updated := make(CoinPrices, 0)
+		for _, info := range cm.PriceMap {
+			updated = append(updated, info)
+		}
+
+		cp = updated
+		sort.Sort(cp)
 	}
 }
 
 func main() {
-	coinMap := NewCoinPriceMap()
+	coinPrices := make(CoinPrices, 0)
 
-	server := NewServer(coinMap)
+	server := NewServer(coinPrices)
 
-	go coinMap.MonitorPrices(server)
+	go coinPrices.MonitorPrices(server)
 
 	log.Println("Starting Crypto API...")
 	server.Start()
