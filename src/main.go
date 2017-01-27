@@ -31,7 +31,6 @@ func (cp CoinPrices) MonitorPrices(server *Server) {
 			log.Printf("Error making request to %s: %s", url, err.Error())
 		}
 
-		defer res.Body.Close()
 		body, err := ioutil.ReadAll(res.Body)
 
 		if err != nil {
@@ -58,6 +57,8 @@ func (cp CoinPrices) MonitorPrices(server *Server) {
 		sort.Sort(sort.Reverse(cp))
 
 		server.Prices = &cp
+
+		res.Body.Close()
 	}
 }
 
